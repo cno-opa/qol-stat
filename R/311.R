@@ -27,7 +27,7 @@ cleanSource <- function(data) {
   return(data)
 }
 
-# calculate summary tables
+#calculate summary tables
 makeSummary <- function(data, service_request) {
 
   countOpen <- function(data, month) {
@@ -54,6 +54,17 @@ makeSummary <- function(data, service_request) {
   return(output)
 }
 
+#calculate number of cases closed within target (in days) by month
+inTarget <- function(data, month, service_request, target) {
+  u <- dateFromYearMon(month)
+  l <- dateFromYearMon(month, eom = FALSE)
+  d <- filter(data, type == service_request, closed_dt >= l & closed_dt <= u)
+
+  p <- nrow(d[d$age__calendar <= target,])/nrow(d)
+  result <- data.frame(type = service_request, date = month, target = p)
+  return(result)
+}
+
 #plot
 plot311NetLog <- function(data, service_request) {
 
@@ -71,8 +82,6 @@ plot311NetLog <- function(data, service_request) {
            scale_y_continuous(breaks = 0) +
            good_bad_scale +
            theme(axis.text.y = element_blank(), legend.position = "none")
-
-# scale_fill_manual(values = c(darkBlue, red), guide = FALSE) +
 
   p_line <- buildChart(p_line)
   p_bar <- buildChart(p_bar)
@@ -102,6 +111,11 @@ summary_table <- rbind(
                  makeSummary(data, "Mosquito Control"),
                  makeSummary(data, "Rodent Complaint")
                  )
+
+target_table <- rbind(
+                do.call("rbind", lapply(month_range, inTarget, data = data, service_request = "Abandoned Vehicle Reporting/Removal", target = 30)),
+                do.call("rbind", lapply(month_range, inTarget, data = data, service_request = "Illegal Dumping Reporting", target = 30))
+                )
 
 theme_set(theme_opa())
 
