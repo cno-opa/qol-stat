@@ -93,6 +93,24 @@ plot311NetLog <- function(data, service_request) {
   ggsave( file = paste("./output/311", service_request, "net.png"), plot = p_bar, width = 7.42, height = 5.75)
 }
 
+plot311LongLine <- function(data, service_request, target) {
+  d <- filter(data, type == service_request)
+
+  #filter for last two years by yearmon factor
+  range_u <- length(levels(d$date))
+  range_l <- range_u - 24
+  date_range <- levels(d$date)[range_l:range_u]
+
+  d <- filter(d, date %in% date_range)
+
+  #remove any backslashes that will break save call
+  service_request <- gsub("/", " ", service_request, fixed = TRUE)
+
+  p <- lineOPA(d, "date", "target", paste("Percent of", service_request, "resolved in", target, "days"), percent = TRUE, labels = "percent(target)")
+  p <- buildChart(p)
+  ggsave( file = paste("./output/311", service_request, "in target.png"), plot = p, width = 7.42, height = 5.75 )
+}
+
 #load and run
 data <- read.csv("./data/311-source.csv", header = TRUE)
 data <- cleanSource(data)
@@ -120,5 +138,7 @@ target_table <- rbind(
 theme_set(theme_opa())
 
 service_requests <- as.character(unique(summary_table$type))
+target_service_requests <- as.character(unique(target_table$type))
 
 sapply(service_requests, plot311NetLog, data = summary_table)
+sapply(target_service_requests, plot311LongLine, data = target_table, target = "30")
