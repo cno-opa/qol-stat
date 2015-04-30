@@ -93,7 +93,7 @@ plot311NetLog <- function(data, service_request) {
   ggsave( file = paste("./output/311", service_request, "net.png"), plot = p_bar, width = 7.42, height = 5.75)
 }
 
-plot311LongLine <- function(data, service_request, target) {
+plot311Target <- function(data, service_request, target) {
   d <- filter(data, type == service_request)
 
   #filter for last two years by yearmon factor
@@ -114,6 +114,7 @@ plot311LongLine <- function(data, service_request, target) {
 #load and run
 data <- read.csv("./data/311-source.csv", header = TRUE)
 data <- cleanSource(data)
+month_range <- sort(unique(as.factor(as.yearmon(data$open_dt))))
 
 summary_table <- rbind(
                  makeSummary(data, "Pothole/Roadway Surface Repair"),
@@ -141,4 +142,4 @@ service_requests <- as.character(unique(summary_table$type))
 target_service_requests <- as.character(unique(target_table$type))
 
 sapply(service_requests, plot311NetLog, data = summary_table)
-sapply(target_service_requests, plot311LongLine, data = target_table, target = "30")
+sapply(target_service_requests, plot311Target, data = target_table, target = "30")
