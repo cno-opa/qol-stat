@@ -73,7 +73,7 @@ theme_opa <- function (base_size = 14, base_family = "")
     strip.text.y = element_text(angle = -90),
 
     plot.background = element_rect(colour = "white"),
-    plot.title = element_text(size = rel(1.2), hjust = 0.05),
+    plot.title = element_text(size = rel(0.9), hjust = 0.05),
     plot.margin = unit(c(1, 1, 1, 1), "lines"),
     complete = TRUE)
 }
@@ -191,11 +191,11 @@ lineOPA <- function(data, x, y, title = "Title!", group = 1, percent = FALSE, la
     labels_data <- getLabelsData()
 
     base <- base +
-            geom_text(data = labels_data, size = 4, colour = "grey33", hjust = -0.2, aes_string(label = dots$labels, y = y)) +
-            scale_x_discrete(expand = c(0, 2.4)) #extend the width of the plot area so label doesn't get cut off
+            geom_text(data = labels_data, size = 2.5, colour = "grey33", hjust = -0.2, aes_string(label = dots$labels, y = y)) +
+            scale_x_discrete(expand = c(0, 2.5)) #extend the width of the plot area so label doesn't get cut off
   } else if( !is.null(dots$labels) ) {
     base <- base +
-            geom_text(size = 4, colour = "grey33", vjust = -0.5, aes_string(label = dots$labels, y = y))
+            geom_text(size = 2.5, colour = "grey33", vjust = -0.5, aes_string(label = dots$labels, y = y))
   }
 
   if(percent == FALSE) {
@@ -255,7 +255,8 @@ barOPA <- function(data, x, y, title = "Title", stat = "identity", position = "i
 
   if( !is.null(dots$labels) ) {
     base <- base +
-            geom_text(size = 2, colour = "grey33",  vjust = ifelse(data[y] >= 0, -0.5, 1.5), aes_string(label = dots$labels, y = y))
+            geom_text(size = 2.5, colour = "grey33",  vjust = ifelse(data[y] >= 0, -0.5, 1.5), aes_string(label = dots$labels, y = y)) +
+            scale_x_discrete(expand = c(0, 2.5))
   }
 
   if( !is.null(dots$fill) ) {

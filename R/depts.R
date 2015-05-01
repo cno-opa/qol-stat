@@ -9,8 +9,8 @@
 #
 
 #plot fn
-plotCumulativeLine <- function(data, measure, target) {
-  d <- filter(data, variable == measure)
+plotCumulativeLine <- function(data, measure, target, cum = TRUE) {
+  d <- filter(data, variable == measure, !is.na(value))
   d$month <- month(as.Date(as.yearmon(d$date)), label = TRUE)
   d$year <- as.character(year(as.Date(as.yearmon(d$date))))
 
@@ -23,6 +23,12 @@ plotCumulativeLine <- function(data, measure, target) {
     }
   }
 
+  #turn target into cumulative sum if cum == FALSE
+  if(cum == FALSE) {
+    r <- cumsum(d$value[d$year == "Target"])
+    d$value[d$year == "Target"] <- r
+  }
+
   d <- group_by(d, year) %>%
        mutate (annual_cum_sum = cumsum(value))
 
@@ -32,9 +38,27 @@ plotCumulativeLine <- function(data, measure, target) {
   names(gray_highlight) <- unique(d$year)
   gray_highlight_scale <- scale_colour_manual(name = "year", values = gray_highlight)
 
-  p <- lineOPA(d, "month", "annual_cum_sum", paste("Cumulative number of", tolower(measure)), group = "year") +
-       gray_highlight_scale +
-       geom_text(data = filter(d, date == r_period), aes(label = format(annual_cum_sum, big.mark = ",", scientific = FALSE), y = annual_cum_sum), size = 4, colour = "grey33", hjust = -0.2, vjust = -1)
+  gray_highlight_no_target <- c(colorRampPalette(c("gray77", "gray55"))(n + 1), darkBlue)
+  names(gray_highlight_no_target) <- unique(d$year)
+  gray_highlight_scale_no_target <- scale_colour_manual(name = "year", values = gray_highlight_no_target)
+
+  if(cum == TRUE & hasArg(target)) {
+    p <- lineOPA(d, "month", "annual_cum_sum", paste("Cumulative number of", tolower(measure)), group = "year") +
+         gray_highlight_scale +
+         geom_text(data = filter(d, date == r_period), aes(label = format(annual_cum_sum, big.mark = ",", scientific = FALSE), y = annual_cum_sum), size = 4, colour = "grey33", hjust = -0.2, vjust = -1)
+  } else if(cum == TRUE & !hasArg(target)) {
+    p <- lineOPA(d, "month", "annual_cum_sum", paste("Cumulative number of", tolower(measure)), group = "year") +
+         gray_highlight_scale_no_target +
+         geom_text(data = filter(d, date == r_period), aes(label = format(annual_cum_sum, big.mark = ",", scientific = FALSE), y = annual_cum_sum), size = 4, colour = "grey33", hjust = -0.2, vjust = -1)
+  } else if(cum == FALSE & !hasArg(target)) {
+    p <- lineOPA(d, "month", "value", paste("Cumulative number of", tolower(measure)), group = "year") +
+         gray_highlight_scale_no_target +
+         geom_text(data = filter(d, date == r_period), aes(label = format(value, big.mark = ",", scientific = FALSE), y = value), size = 4, colour = "grey33", hjust = -0.2, vjust = -1)
+  } else if(cum == FALSE & hasArg(target)) {
+    p <- lineOPA(d, "month", "value", paste("Cumulative number of", tolower(measure)), group = "year") +
+         gray_highlight_scale +
+         geom_text(data = filter(d, date == r_period), aes(label = format(value, big.mark = ",", scientific = FALSE), y = value), size = 4, colour = "grey33", hjust = -0.2, vjust = -1)
+  }
 
   p <- buildChart(p)
   ggsave( file = paste("./output/dept", measure, "cumulative.png"), plot = p, width = 7.42, height = 5.75 )
@@ -62,8 +86,8 @@ data$variable <- gsub(".", " ", data$variable, fixed = TRUE)
 theme_set(theme_opa())
 
 plotCumulativeLine(data, "Potholes filled", 40000)
-plotCumulativeLine(data, "Traffic signs installed", 20000)
-plotCumulativeLine(data, "Street name signs installed", 1000)
+plotCumulativeLine(data, "Traffic signs installed", 2000, cum = FALSE)
+plotCumulativeLine(data, "Street name signs installed", 1000, cum = FALSE)
 plotCumulativeLine(data, "Catch basins cleaned", 3000)
 plotCumulativeLine(data, "Tree trims and removals", 3000)
 plotCumulativeLine(data, "Emergency tree removals")
@@ -84,7 +108,7 @@ ggsave( file = "./output/streetlight outages restored.png", plot = p_outage, wid
 clusterBarYear(data, "Acres mowed")
 
 #bandit signs
-p_bandit <- lineOPA(filter(data, variable == "PP sign removal" | variable == "Sanitation sign removal", !is.na(value)), "date", "value", "Bandit sign removal", group = "variable", legend.labels = c("Parks and Parkways", 'Sanitation'), labels = "value")
+p_bandit <- lineOPA(filter(data, variable == "PP sign removal" | variable == "Sanitation sign removal", !is.na(value)), "date", "value", "Bandit signs removed", group = "variable", legend.labels = c("Parks and Parkways", 'Sanitation'), labels = "value")
 p_bandit <- buildChart(p_bandit)
 ggsave( file = "./output/bandit sign removal.png", plot = p_bandit, width = 7.42, height = 5.75 )
 
