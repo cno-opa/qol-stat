@@ -9,10 +9,17 @@
 #
 
 #plot fn
-plotCumulativeLine <- function(data, measure, target, cum = TRUE) {
+plotCumulativeLine <- function(data, measure, target, cum = TRUE, lower_title = TRUE) {
   d <- filter(data, variable == measure, !is.na(value))
   d$month <- month(as.Date(as.yearmon(d$date)), label = TRUE)
   d$year <- as.character(year(as.Date(as.yearmon(d$date))))
+
+  #title stuff
+  if(lower_title == TRUE) {
+    title_measure <- tolower(measure)
+  } else {
+    title_measure <- measure
+  }
 
   #add target
   if(hasArg(target)) {
@@ -43,19 +50,19 @@ plotCumulativeLine <- function(data, measure, target, cum = TRUE) {
   gray_highlight_scale_no_target <- scale_colour_manual(name = "year", values = gray_highlight_no_target)
 
   if(cum == TRUE & hasArg(target)) {
-    p <- lineOPA(d, "month", "annual_cum_sum", paste("Cumulative number of", tolower(measure)), group = "year") +
+    p <- lineOPA(d, "month", "annual_cum_sum", paste("Cumulative number of", title_measure), group = "year") +
          gray_highlight_scale +
          geom_text(data = filter(d, date == r_period), aes(label = format(annual_cum_sum, big.mark = ",", scientific = FALSE), y = annual_cum_sum), size = 4, colour = "grey33", hjust = -0.2, vjust = -1)
   } else if(cum == TRUE & !hasArg(target)) {
-    p <- lineOPA(d, "month", "annual_cum_sum", paste("Cumulative number of", tolower(measure)), group = "year") +
+    p <- lineOPA(d, "month", "annual_cum_sum", paste("Cumulative number of", title_measure), group = "year") +
          gray_highlight_scale_no_target +
          geom_text(data = filter(d, date == r_period), aes(label = format(annual_cum_sum, big.mark = ",", scientific = FALSE), y = annual_cum_sum), size = 4, colour = "grey33", hjust = -0.2, vjust = -1)
   } else if(cum == FALSE & !hasArg(target)) {
-    p <- lineOPA(d, "month", "value", paste("Cumulative number of", tolower(measure)), group = "year") +
+    p <- lineOPA(d, "month", "value", paste("Cumulative number of", title_measure), group = "year") +
          gray_highlight_scale_no_target +
          geom_text(data = filter(d, date == r_period), aes(label = format(value, big.mark = ",", scientific = FALSE), y = value), size = 4, colour = "grey33", hjust = -0.2, vjust = -1)
   } else if(cum == FALSE & hasArg(target)) {
-    p <- lineOPA(d, "month", "value", paste("Cumulative number of", tolower(measure)), group = "year") +
+    p <- lineOPA(d, "month", "value", paste("Cumulative number of", title_measure), group = "year") +
          gray_highlight_scale +
          geom_text(data = filter(d, date == r_period), aes(label = format(value, big.mark = ",", scientific = FALSE), y = value), size = 4, colour = "grey33", hjust = -0.2, vjust = -1)
   }
@@ -69,7 +76,10 @@ clusterBarYear <- function(data, measure) {
   d$month <- month(as.Date(as.yearmon(d$date)), label = TRUE)
   d$year <- as.character(year(as.Date(as.yearmon(d$date))))
 
-  p <- barOPA(d, "month", "value", measure, fill = "year", position = "dodge")
+  colors_highlight <- c(colorRampPalette( c(darkBlue, lightBlue) )(length(unique(d$year)) - 1), red)
+
+  p <- barOPA(d, "month", "value", measure, fill = "year", position = "dodge") +
+       scale_fill_manual(values = colors_highlight)
   p <- buildChart(p)
 
   ggsave( file = paste("./output/", measure, "cluster bar.png"), plot = p, width = 7.42, height = 5.75 )
@@ -80,6 +90,12 @@ data <- read.csv("./data/depts.csv", header = TRUE)
 data <- melt(data, id.vars = "date")
 data$date <- as.factor(as.yearmon(data$date))
 data$variable <- gsub(".", " ", data$variable, fixed = TRUE)
+
+#subset to two years back from reporting period
+# date_max <- length(levels(data$date))
+# date_min <- length(levels(data$date)) - 24
+# date_range <- levels(data$date)[date_min:date_max]
+# data <- filter(data, date %in% date_range)
 
 #plot calls
 
@@ -92,7 +108,7 @@ plotCumulativeLine(data, "Catch basins cleaned", 3000)
 plotCumulativeLine(data, "Tree trims and removals", 3000)
 plotCumulativeLine(data, "Emergency tree removals")
 plotCumulativeLine(data, "Illegal dumping sites cleared", 2000)
-plotCumulativeLine(data, "ABO filings", 250)
+plotCumulativeLine(data, "ABO filings", 250, lower_title = FALSE)
 
 #percent of streetlights functioning
 p_sl <- lineOPA(filter(data, variable == "Streetlights functioning"), "date", "value", "Percent of street lights functioning", percent = TRUE, labels = "percent(value)")
@@ -113,7 +129,7 @@ p_bandit <- buildChart(p_bandit)
 ggsave( file = "./output/bandit sign removal.png", plot = p_bandit, width = 7.42, height = 5.75 )
 
 #sanitation inspections
-p_san_insp <- lineOPA(filter(data, variable == "Sanitation inspections"), "date", "value", "Sanitation inspections", labels = "value")
+p_san_insp <- barOPA(filter(data, variable == "Sanitation inspections"), "date", "value", "Sanitation inspections", labels = "value")
 p_san_insp <- buildChart(p_san_insp)
 ggsave( file = "./output/sanitation inspections.png", plot = p_san_insp, width = 7.42, height = 5.75 )
 
@@ -133,7 +149,7 @@ p_mosq <- buildChart(p_mosq)
 ggsave( file = "./output/avg days mosquito.png", plot = p_mosq, width = 7.42, height = 5.75 )
 
 #avg days to rodent request
-p_rod <- lineOPA(filter(data, variable == "Avg days to rodent request", !is.na(value)), "date", "value", "Average days to close mosquito request", labels = "value")
+p_rod <- lineOPA(filter(data, variable == "Avg days to rodent request", !is.na(value)), "date", "value", "Average days to close rodent request", labels = "value")
 p_rod <- buildChart(p_rod)
 ggsave( file = "./output/avg days rodent.png", plot = p_rod, width = 7.42, height = 5.75 )
 
