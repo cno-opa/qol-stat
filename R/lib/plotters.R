@@ -351,27 +351,3 @@ wiseChart <- function(data, x, y, formula, title = "Title!", title.dates = TRUE)
 
   return(base)
 }
-
-shadedLines <- function(data, x, ymin, ymax, ...) {
-
-  dots <- eval(substitute(alist(...)))
-
-  #for manually declaring the breaks later
-  x_brks_vals <- as.vector(data[x])
-
-  #data transformations
-  data$x_n <- 1:nrow(data)
-  data$over_under <- ifelse(data[ymax,] >= data[ymin,], "good", "bad")
-
-  #calc intercepts
-
-
-
-
-  #one end game
-  p <- ggplot(data, aes(x = x_n)) +
-       geom_ribbon(aes(ymin = ymin, ymax = ymax), alpha = 0.3) + geom_line(aes(y = ymax), colour = "forestgreen") +
-       geom_line(aes(y = ymin), colour = "tomato")
-
-
-}
