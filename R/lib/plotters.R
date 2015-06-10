@@ -157,10 +157,19 @@ lineOPA <- function(data, x, y, title = "Title!", group = 1, percent = FALSE, la
     blues <- remap(blues, dots$highlight, red)
   }
 
-  #the very basic base
-  base <- ggplot(data, aes_string(x = x, y = y, group = group, colour = group)) +
-          geom_line(size = 1.5) +
-          labs(title = title, x = "", y = "")
+  if( !is.null(dots$linetype) ) {
+    linetypes <- eval(dots$linetype)
+    #the very basic base + linetype
+    base <- ggplot(data, aes_string(x = x, y = y, group = group, colour = group, linetype = group)) +
+            geom_line(size = 1.5) +
+            labs(title = title, x = "", y = "") +
+            scale_linetype_manual(values = linetypes)
+  } else {
+    #the very basic base
+    base <- ggplot(data, aes_string(x = x, y = y, group = group, colour = group)) +
+            geom_line(size = 1.5) +
+            labs(title = title, x = "", y = "")
+  }
 
   if( !is.null(dots$ylab) ) {
     base <- base + labs(y = dots$ylab)
@@ -181,7 +190,7 @@ lineOPA <- function(data, x, y, title = "Title!", group = 1, percent = FALSE, la
     #hacky way to get labels data when there is more than one series. pulls all data in df for the named period
     getLabelsData <- function() {
       if(group != 1) {
-        d <- data[data[,1] == r_period,]
+        d <- data[data[x] == r_period,]
         return(d)
       } else {
         return(data[nrow(data), ])
@@ -191,15 +200,21 @@ lineOPA <- function(data, x, y, title = "Title!", group = 1, percent = FALSE, la
     labels_data <- getLabelsData()
 
     base <- base +
-            geom_text(data = labels_data, size = 2.5, colour = "grey33", hjust = -0.2, aes_string(label = dots$labels, y = y)) +
+            geom_text(data = labels_data, size = 3, colour = "grey33", hjust = -0.2, aes_string(label = dots$labels, y = y)) +
             scale_x_discrete(expand = c(0, 2.5)) #extend the width of the plot area so label doesn't get cut off
   } else if( !is.null(dots$labels) ) {
     base <- base +
-            geom_text(size = 2.5, colour = "grey33", vjust = -0.5, aes_string(label = dots$labels, y = y))
+            geom_text(size = 3, colour = "grey33", vjust = -0.5, aes_string(label = dots$labels, y = y))
   }
 
   if(percent == FALSE) {
     brks <- pretty_breaks(4, min.n = 4)(0:ymax)
+
+    #handle cases where ymax is float
+    if(brks[length(brks)] <= ymax) {
+      brks <- c(brks, (brks[length(brks)] + abs(brks[2] - brks[1])))
+    }
+
     yul  <- brks[length(brks)]
     base <- base + scale_y_continuous(breaks = brks) + expand_limits(y = c(0, yul))
   } else {
@@ -335,4 +350,28 @@ wiseChart <- function(data, x, y, formula, title = "Title!", title.dates = TRUE)
                )
 
   return(base)
+}
+
+shadedLines <- function(data, x, ymin, ymax, ...) {
+
+  dots <- eval(substitute(alist(...)))
+
+  #for manually declaring the breaks later
+  x_brks_vals <- as.vector(data[x])
+
+  #data transformations
+  data$x_n <- 1:nrow(data)
+  data$over_under <- ifelse(data[ymax,] >= data[ymin,], "good", "bad")
+
+  #calc intercepts
+
+
+
+
+  #one end game
+  p <- ggplot(data, aes(x = x_n)) +
+       geom_ribbon(aes(ymin = ymin, ymax = ymax), alpha = 0.3) + geom_line(aes(y = ymax), colour = "forestgreen") +
+       geom_line(aes(y = ymin), colour = "tomato")
+
+
 }
