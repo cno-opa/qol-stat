@@ -42,11 +42,23 @@ makeSummary <- function(data, service_request) {
     return( o - c )
   }
 
+  countOpened <- function(data, month) {
+    o <- nrow(filter(data, month_start == month))
+    return(o)
+  }
+
+  countClosed <- function(data, month) {
+    c <- nrow(filter(data, month_end == month))
+    return(c)
+  }
+
   d <- filter(data, type == service_request)
   month_range <- unique(d$month_start)
 
   output <- data.frame(type = service_request, date = month_range)
   output$open <- sapply(output$date, countOpen, data = d)
+  output$Opened <- sapply(output$date, countOpened, data = d)
+  output$Closed <- sapply(output$date, countClosed, data = d)
   output$net <- sapply(output$date, countNet, data = d)
   output$shade <- ifelse(output$net > 0, "bad","good")
   output <- melt(output, id.vars = c("type", "date", "shade"))
@@ -65,6 +77,29 @@ inTarget <- function(data, month, service_request, target) {
   return(result)
 }
 
+#calculate and save kpis
+calcKPIs <- function(data, r_period) {
+  #get YTD based on r_period and date request was closed
+  d <- filter(data, closed_dt >= ymd(paste(year(dateFromYearMon(r_period)), "01", "01", sep = "-")))
+
+  #percent of streetlight requests closed within 90 days
+  kpi_lights_90_days <- nrow(filter(d, type == "Street Light", age__calendar <= 90))/nrow(filter(d, type == "Street Light"))
+
+  #percent of abandoned vehicle requests closed in 30 days
+  kpi_vehicles_30_days <- nrow(filter(d, type == "Abandoned Vehicle Reporting/Removal", age__calendar <= 30))/nrow(filter(d, type == "Abandoned Vehicle Reporting/Removal"))
+
+  #percent of illegal dumping requests closed in 30 days
+  kpi_dumping_30_days <- nrow(filter(d, type == "Illegal Dumping Reporting", age__calendar <= 30))/nrow(filter(d, type == "Illegal Dumping Reporting"))
+
+  kpis <- rbind(
+            c("DPW - Percent of 311 street light requests closed in 90 days", kpi_lights_90_days),
+            c("DPW - Percent of 311 abandoned vehicle requests closed in 30 days", kpi_vehicles_30_days),
+            c("SAN - Percent of 311 illegal dumping requests closed in 30 days", kpi_dumping_30_days)
+          )
+
+  save(kpis, file = "./data/kpis.Rdata")
+}
+
 #plot
 plot311NetLog <- function(data, service_request) {
 
@@ -78,19 +113,24 @@ plot311NetLog <- function(data, service_request) {
   d <- filter(d, date %in% date_range)
 
   p_line <- lineOPA(filter(d, variable == "open"), "date", "value", title = paste(service_request, "service requests open at end of month"), labels = "format(value, big.mark = \",\", scientific = FALSE)")
-  p_bar <- barOPA(filter(d, variable == "net"), "date", "value", title = paste(service_request, "service requests net per month"), fill = "shade", labels = "format(value, big.mark = \",\", scientific = FALSE)") +
-           scale_y_continuous(breaks = 0) +
-           good_bad_scale +
-           theme(axis.text.y = element_blank(), legend.position = "none")
+  #p_bar <- barOPA(filter(d, variable == "net"), "date", "value", title = paste(service_request, "service requests net per month"), fill = "shade", labels = "format(value, big.mark = \",\", scientific = FALSE)") +
+          #  scale_y_continuous(breaks = 0) +
+          #  good_bad_scale +
+          #  theme(axis.text.y = element_blank(), legend.position = "none")
+
+  p_bar <- barOPA(filter(d, variable == "Opened" | variable == "Closed"), "date", "value", title = paste(service_request, "service requests net per month"), fill = "variable", position = "identity") + scale_fill_manual(values = alpha(c("red", "blue"), .3))
+
+  #p_net_line <- lineOPA(filter(d, variable == "Opened" | variable == "Closed"), "date", "value", title = paste(service_request, "service requests opened and closed per month"), group = "variable", labels = "value")
 
   p_line <- buildChart(p_line)
+  #p_net_line <- buildChart(p_net_line)
   p_bar <- buildChart(p_bar)
 
   #remove any backslashes that will break save call
   service_request <- gsub("/", " ", service_request, fixed = TRUE)
 
   ggsave( file = paste("./output/311", service_request, "backlog.png"), plot = p_line, width = 7.42, height = 5.75)
-  ggsave( file = paste("./output/311", service_request, "net.png"), plot = p_bar, width = 7.42, height = 5.75)
+  ggsave( file = paste("./output/311", service_request, "opened and closed.png"), plot = p_bar, width = 7.42, height = 5.75)
 }
 
 plot311Target <- function(data, service_request, target) {
@@ -143,3 +183,5 @@ target_service_requests <- as.character(unique(target_table$type))
 
 sapply(service_requests, plot311NetLog, data = summary_table)
 sapply(target_service_requests, plot311Target, data = target_table, target = "30")
+
+calcKPIs(data, r_period)
