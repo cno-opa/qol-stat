@@ -14,6 +14,11 @@ plotCumulativeLine <- function(data, measure, target, cum = TRUE, lower_title = 
   d$month <- month(as.Date(as.yearmon(d$date)), label = TRUE)
   d$year <- as.character(year(as.Date(as.yearmon(d$date))))
 
+  #subset to most recent three years
+  yrs_n <- length(unique(d$year))
+  yrs <- unique(d$year)[(yrs_n - 2):yrs_n]
+  d <- filter(d, year %in% yrs)
+
   #title stuff
   if(lower_title == TRUE) {
     title_measure <- tolower(measure)
@@ -41,7 +46,7 @@ plotCumulativeLine <- function(data, measure, target, cum = TRUE, lower_title = 
 
   #custom color scale
   n <- length(unique(d$year)) - 2
-  gray_highlight <- c(colorRampPalette(c("gray77", "gray55"))(n), darkBlue, red)
+  gray_highlight <- c(colorRampPalette(c("gray77", "gray55"))(n), darkBlue, "grey10")
   names(gray_highlight) <- unique(d$year)
   gray_highlight_scale <- scale_colour_manual(name = "year", values = gray_highlight)
 
@@ -49,8 +54,10 @@ plotCumulativeLine <- function(data, measure, target, cum = TRUE, lower_title = 
   names(gray_highlight_no_target) <- unique(d$year)
   gray_highlight_scale_no_target <- scale_colour_manual(name = "year", values = gray_highlight_no_target)
 
+  rep_n <- length(unique(d$year)) - 1
+
   if(cum == TRUE & hasArg(target)) {
-    p <- lineOPA(d, "month", "annual_cum_sum", paste("Cumulative number of", title_measure), group = "year") +
+    p <- lineOPA(d, "month", "annual_cum_sum", paste("Cumulative number of", title_measure), group = "year", linetype = c(rep("solid", length(unique(data$year)) - 1), "dashed")) +
          gray_highlight_scale +
          geom_text(data = filter(d, date == r_period), aes(label = format(annual_cum_sum, big.mark = ",", scientific = FALSE), y = annual_cum_sum), size = 4, colour = "grey33", hjust = -0.2, vjust = -1)
   } else if(cum == TRUE & !hasArg(target)) {
@@ -62,7 +69,7 @@ plotCumulativeLine <- function(data, measure, target, cum = TRUE, lower_title = 
          gray_highlight_scale_no_target +
          geom_text(data = filter(d, date == r_period), aes(label = format(value, big.mark = ",", scientific = FALSE), y = value), size = 4, colour = "grey33", hjust = -0.2, vjust = -1)
   } else if(cum == FALSE & hasArg(target)) {
-    p <- lineOPA(d, "month", "value", paste("Cumulative number of", title_measure), group = "year") +
+    p <- lineOPA(d, "month", "value", paste("Cumulative number of", title_measure), group = "year", linetype = c(rep("solid", length(unique(data$year)) - 1), "dashed")) +
          gray_highlight_scale +
          geom_text(data = filter(d, date == r_period), aes(label = format(value, big.mark = ",", scientific = FALSE), y = value), size = 4, colour = "grey33", hjust = -0.2, vjust = -1)
   }
@@ -76,7 +83,7 @@ clusterBarYear <- function(data, measure) {
   d$month <- month(as.Date(as.yearmon(d$date)), label = TRUE)
   d$year <- as.character(year(as.Date(as.yearmon(d$date))))
 
-  colors_highlight <- c(colorRampPalette( c(darkBlue, lightBlue) )(length(unique(d$year)) - 1), red)
+  colors_highlight <- c(colorRampPalette( c("gray77", "gray55") )(length(unique(d$year)) - 1), darkBlue)
 
   p <- barOPA(d, "month", "value", measure, fill = "year", position = "dodge") +
        scale_fill_manual(values = colors_highlight)
@@ -85,8 +92,49 @@ clusterBarYear <- function(data, measure) {
   ggsave( file = paste("./output/", measure, "cluster bar.png"), plot = p, width = 7.42, height = 5.75 )
 }
 
+calcKPIs <- function(data, r_period) {
+  load("./data/kpis.Rdata")
+
+  #subset data YTD based on r_period
+  month_range <- unique(data$date[year(dateFromYearMon(data$date)) == year(dateFromYearMon(r_period))])
+  d <- filter(data, date %in% month_range)
+
+  summary_all_depts <- group_by(d, variable) %>%
+                       summarise(sum = sum(value))
+
+  kpi_potholes_filled <- filter(summary_all_depts, variable == "Potholes filled")$sum
+  kpi_outages_restored <- filter(summary_all_depts, variable == "Outages restored")$sum
+  kpi_catch_basins <- filter(summary_all_depts, variable == "Catch basins cleaned")$sum
+  kpi_acres_mowed <- filter(summary_all_depts, variable == "Acres mowed")$sum
+  kpi_trims <- filter(summary_all_depts, variable == "Tree trims and removals")$sum
+  kpi_dumping <- filter(summary_all_depts, variable == "Illegal dumping sites cleared")$sum
+  kpi_abo <- filter(summary_all_depts, variable == "ABO filings")$sum
+  kpi_mosquito <- filter(summary_all_depts, variable == "Avg days to mosquito request")$sum/length(month_range)
+  kpi_rodent <- filter(summary_all_depts, variable == "Avg days to rodent request")$sum/length(month_range)
+
+  kpis <- rbind(
+            kpis,
+            c("DPW - Potholes filled", kpi_potholes_filled),
+            c("DPW - Percent of streetlights functioning", filter(d, variable == "Streetlights functioning", date == r_period)$value),
+            c("DPW - Number of outages restored", kpi_outages_restored),
+            c("DPW - Number of permanent traffic signs installed", filter(d, variable == "Traffic signs installed", date == r_period)$value),
+            c("DPW - Number of street name signs installed", filter(d, variable == "Street name signs installed", date == r_period)$value),
+            c("DPW - Number of catch basins cleaned", kpi_catch_basins),
+            c("DPW - Percent of catch basins cleaned", kpi_catch_basins/68092),
+            c("PP - Number of acres mowed", kpi_acres_mowed),
+            c("PP - Number of tree trims and removals", kpi_trims),
+            c("SAN - Number of illegal dumping sites cleared", kpi_dumping),
+            c("SAN - Percentage of households registered for recycling", filter(d, variable == "Houses registered for recycling", date == r_period)$value/136746),
+            c("LAW - Number of ABO filings", kpi_abo),
+            c("MTCB - Average days to close mosquito service request", kpi_mosquito),
+            c("MTCB - Average days to close rodent request", kpi_rodent)
+          )
+
+  return(kpis)
+}
+
 #load and melt
-data <- read.csv("./data/depts.csv", header = TRUE)
+data <- read.csv("./data/depts-2015-04.csv", header = TRUE)
 data <- melt(data, id.vars = "date")
 data$date <- as.factor(as.yearmon(data$date))
 data$variable <- gsub(".", " ", data$variable, fixed = TRUE)
@@ -129,12 +177,12 @@ p_bandit <- buildChart(p_bandit)
 ggsave( file = "./output/bandit sign removal.png", plot = p_bandit, width = 7.42, height = 5.75 )
 
 #sanitation inspections
-p_san_insp <- barOPA(filter(data, variable == "Sanitation inspections"), "date", "value", "Sanitation inspections", labels = "value")
+p_san_insp <- lineOPA(filter(data, variable == "Sanitation inspections"), "date", "value", "Sanitation inspections", labels = "value")
 p_san_insp <- buildChart(p_san_insp)
 ggsave( file = "./output/sanitation inspections.png", plot = p_san_insp, width = 7.42, height = 5.75 )
 
 #tires removed
-p_tires <- barOPA(filter(data, variable == "Tires removed"), "date", "value", "Tires removed", labels = "value")
+p_tires <- lineOPA(filter(data, variable == "Tires removed"), "date", "value", "Tires removed", labels = "value")
 p_tires <- buildChart(p_tires)
 ggsave( file = "./output/tires removed.png", plot = p_tires, width = 7.42, height = 5.75 )
 
@@ -157,3 +205,7 @@ ggsave( file = "./output/avg days rodent.png", plot = p_rod, width = 7.42, heigh
 p_nopd <- lineOPA(filter(data, variable == "Complaints received by NOPD" | variable == "Summonses issued by NOPD", !is.na(value)), "date", "value", "Complaints received and summonses issued by NOPD quality of life officers", group = "variable", labels = "value")
 p_nopd <- buildChart(p_nopd)
 ggsave( file = "./output/nopd.png", plot = p_nopd, width = 7.42, height = 5.75 )
+
+#calc kpis and print
+kpis <- calcKPIs(data, r_period)
+print(kpis)
