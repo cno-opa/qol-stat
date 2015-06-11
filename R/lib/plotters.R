@@ -230,6 +230,29 @@ lineOPA <- function(data, x, y, title = "Title!", group = 1, percent = FALSE, la
     base <- base + scale_y_continuous(breaks = brks, labels = percent(brks)) + expand_limits(y = c(0, brks[length(brks)]))
   }
 
+  if( !is.null(dots$target.line) ) {
+    t <- as.numeric(dots$target.line)
+    base <- base + geom_hline(aes(group = 1), yintercept = t, colour = "grey55", linetype = "dashed", size = 1)
+
+    if(t >= brks[length(brks)] && percent == TRUE) {
+      ymax <- t * 100
+      brks <- (pretty_breaks(4, min.n = 4)(0:ymax))/100
+      for(i in 1:length(brks)) {
+        if(brks[i] > 1) {
+          brks[i] <- 1
+        }
+      }
+      brks <- unique(brks)
+      base <- base + scale_y_continuous(breaks = brks, labels = percent(brks)) + expand_limits(y = c(0, brks[length(brks)]))
+    } else if(t >= brks[length(brks)] && percent == FALSE) {
+      ymax <- t
+      brks <- pretty_breaks(4, min.n = 4)(0:ymax)
+      yul  <- brks[length(brks)]
+
+      base <- base + scale_y_continuous(breaks = brks) + expand_limits(y = c(0, yul))
+    }
+  }
+
   return(base)
 }
 
