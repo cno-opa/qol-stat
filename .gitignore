@@ -8,3 +8,5 @@ output/*
 notes/*
 ignore/*
 *.pem
+ggmapTemp.png
+doc.md

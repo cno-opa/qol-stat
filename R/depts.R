@@ -134,7 +134,7 @@ calcKPIs <- function(data, r_period) {
 }
 
 #load and melt
-data <- read.csv("./data/depts-2015-04.csv", header = TRUE)
+data <- read.csv("./data/depts.csv", header = TRUE)
 data <- melt(data, id.vars = "date")
 data$date <- as.factor(as.yearmon(data$date))
 data$variable <- gsub(".", " ", data$variable, fixed = TRUE)
