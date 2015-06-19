@@ -151,6 +151,18 @@ plot311Target <- function(data, service_request, target) {
   ggsave( file = paste("./output/311", service_request, "in target.png"), plot = p, width = 7.42, height = 5.75 )
 }
 
+mapNewSR <- function(data, service_request) {
+  d <- filter(data, type == service_request, month_start == r_period)
+  dsp <- toSpatialPoints(d, "x", "y")
+
+  #remove any backslashes that will break save call
+  service_request <- gsub("/", " ", service_request, fixed = TRUE)
+
+  map <- mapOPAPoints(dsp, "x", "y", map_source = "google", map_type = "terrain-lines", fill = "tomato", size =2.5, title = paste("New", service_request, "service requests,", r_period, sep = " "))
+  map <- buildChart(map)
+  ggsave( file = paste("./output/map", service_request, ".png"), plot = map, width = 7.42, height = 5.75)
+}
+
 #load and run
 data <- read.csv("./data/311-source.csv", header = TRUE)
 data <- cleanSource(data)
@@ -176,12 +188,13 @@ target_table <- rbind(
                 do.call("rbind", lapply(month_range, inTarget, data = data, service_request = "Illegal Dumping Reporting", target = 30))
                 )
 
-theme_set(theme_opa())
+theme_set(theme_opa( base_size = 12 ))
 
 service_requests <- as.character(unique(summary_table$type))
 target_service_requests <- as.character(unique(target_table$type))
 
 sapply(service_requests, plot311NetLog, data = summary_table)
 sapply(target_service_requests, plot311Target, data = target_table, target = "30")
+sapply(service_requests, mapNewSR, data = data)
 
 calcKPIs(data, r_period)

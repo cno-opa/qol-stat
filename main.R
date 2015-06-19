@@ -28,7 +28,7 @@ source_https <- function(u, unlink.tmp.certs = FALSE) {
 }
 
 # sequence of script executions
-# source_https("https://raw.githubusercontent.com/cno-opa/graphics/master/plotters.R")
+source_https("https://raw.githubusercontent.com/cno-opa/graphics/master/plotters.R")
 source_https("https://raw.githubusercontent.com/cno-opa/graphics/master/mappers.R")
 
 # sequence of script executions

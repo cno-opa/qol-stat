@@ -147,7 +147,7 @@ data$variable <- gsub(".", " ", data$variable, fixed = TRUE)
 
 #plot calls
 
-theme_set(theme_opa())
+theme_set(theme_opa( base_size = 12 ))
 
 plotCumulativeLine(data, "Potholes filled", 40000)
 plotCumulativeLine(data, "Traffic signs installed", 2000, cum = FALSE)
@@ -159,7 +159,7 @@ plotCumulativeLine(data, "Illegal dumping sites cleared", 2000)
 plotCumulativeLine(data, "ABO filings", 250, lower_title = FALSE)
 
 #percent of streetlights functioning
-p_sl <- lineOPA(filter(data, variable == "Streetlights functioning"), "date", "value", "Percent of street lights functioning", percent = TRUE, labels = "percent(value)")
+p_sl <- lineOPA(filter(data, variable == "Streetlights functioning"), "date", "value", "Percent of street lights functioning", percent = TRUE, labels = "percent(value)", lab.size = 2.5 )
 p_sl <- buildChart(p_sl)
 ggsave( file = "./output/dept percent of streetlights on.png", plot = p_sl, width = 7.42, height = 5.75 )
 
