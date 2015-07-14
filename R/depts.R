@@ -154,7 +154,7 @@ plotCumulativeLine(data, "Traffic signs installed", 2000, cum = FALSE)
 plotCumulativeLine(data, "Street name signs installed", 1000, cum = FALSE)
 plotCumulativeLine(data, "Catch basins cleaned", 3000)
 plotCumulativeLine(data, "Tree trims and removals", 3000)
-plotCumulativeLine(data, "Emergency tree removals")
+plotCumulativeLine(data, "Emergency tree requests")
 plotCumulativeLine(data, "Illegal dumping sites cleared", 2000)
 plotCumulativeLine(data, "ABO filings", 250, lower_title = FALSE)
 

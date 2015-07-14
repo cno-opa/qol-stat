@@ -37,18 +37,18 @@ makeSummary <- function(data, service_request) {
   }
 
   countNet <- function(data, month) {
-    o <- nrow(filter(data, month_start == month))
-    c <- nrow(filter(data, month_end == month))
+    o <- nrow(filter(data, as.character(month_start) == as.character(month)))
+    c <- nrow(filter(data, as.character(month_end) == as.character(month)))
     return( o - c )
   }
 
   countOpened <- function(data, month) {
-    o <- nrow(filter(data, month_start == month))
+    o <- nrow(filter(data, as.character(month_start) == as.character(month)))
     return(o)
   }
 
   countClosed <- function(data, month) {
-    c <- nrow(filter(data, month_end == month))
+    c <- nrow(filter(data, as.character(month_end) == as.character(month)))
     return(c)
   }
 
