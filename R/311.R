@@ -195,6 +195,6 @@ target_service_requests <- as.character(unique(target_table$type))
 
 sapply(service_requests, plot311NetLog, data = summary_table)
 sapply(target_service_requests, plot311Target, data = target_table, target = "30")
-sapply(service_requests, mapNewSR, data = data)
+#sapply(service_requests, mapNewSR, data = data)
 
 calcKPIs(data, r_period)
