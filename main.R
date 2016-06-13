@@ -1,10 +1,8 @@
 # runs the whole kit and kaboodle
 
-.libPaths("C:\\Rpackages")
-
 # get user to set reporting period
 cat("What is the reporting period?\n\n##(Use mmm yyyy format, please)##\n\n")
-r_period <- readLines("stdin", 1, warn = FALSE)
+r_period <- readline("Enter reporting period: ")
 
 # initialize
 init <- function(subdir) {
@@ -24,7 +22,7 @@ source_https <- function(u, unlink.tmp.certs = FALSE) {
     if(unlink.tmp.certs) unlink("cacert.pem")
 
     # parase lines and evealuate in the global environement
-    eval(parse(text = script), envir= .GlobalEnv)
+    eval(parse(text = script), envir = .GlobalEnv)
 }
 
 # sequence of script executions
